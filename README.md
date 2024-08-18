@@ -1,12 +1,5 @@
-# Trabalho-Compiladores1
-Trabalho de analisador léxico de um compilador
-Feito por:
-Antonio Erick
-Mario Martins
-Gustavo Gurgel
-Joao Pedro Soares
-
-# Etapa 1 - Difinição das RegEx de cada Token
+# Trabalho 1 -Compiladores - Analisador Léxico
+## Etapa 1 - Definição das RegEx de cada Token
 
 | **Token** | **Regex**                    |
 |-----------|------------------------------|
@@ -19,4 +12,11 @@ Joao Pedro Soares
 | LTH       | `<`                          |
 | GTH       | `>`                          |
 | SCN       | `;`                          |
-| VAR       | `((([a-zA-Z])+.[0-9]*))`     |
+| VAR       | `([a-zA-Z]+.[0-9]*)*`     |
+
+## Colaboradores 👨‍💻
+
+* Antonio Erick
+* Mario Martins
+* Gustavo Gurgel
+* Joao Pedro Soares
