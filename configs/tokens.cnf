@@ -1,0 +1,6 @@
+## (char, type, precedence, argc)
+* 2 2 1
+. 2 1 2
+| 2 1 2
+( 3 0 0
+) 4 0 0

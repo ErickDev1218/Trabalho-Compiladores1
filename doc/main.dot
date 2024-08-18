@@ -1,0 +1,9 @@
+digraph G {
+graph [ dpi = 300 ];     
+node [ shape = "circle" ]
+A [style=invis]
+0
+A -> 0
+1[shape="doublecircle"]  
+0 -> 1[label=" x "]      
+}
