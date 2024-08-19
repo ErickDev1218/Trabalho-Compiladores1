@@ -1,4 +1,4 @@
-import Automata from "./Automata";
+import Automata, { epsilonChar } from "./Automata";
 
 function AutomataSum(A1 : Automata, A2 : Automata) : Automata {
 

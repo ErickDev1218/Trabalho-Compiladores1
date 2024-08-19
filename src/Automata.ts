@@ -1,4 +1,4 @@
-const epsilonChar = '@';
+const epsilonChar : string = '@';
 
 type Automata = {
     size: number, /*size = 2 -> state0, state1*/
@@ -48,4 +48,4 @@ function parseToGraphviz(a : Automata) : void {
 }
 
 export default Automata;
-export { charToAutomata, parseToGraphviz };
+export { charToAutomata, parseToGraphviz, epsilonChar };
