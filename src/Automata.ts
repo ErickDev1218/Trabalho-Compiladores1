@@ -1,3 +1,5 @@
+const epsilonChar = '@';
+
 type Automata = {
     size: number, /*size = 2 -> state0, state1*/
     initState: number,
