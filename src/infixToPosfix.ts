@@ -16,6 +16,8 @@ type Token = {
     argc: number
 }
 
+const escaped_char = "\\";
+
 /* Globals */
 const token_map: Map<string, Token> = new Map<string, Token>();
 await populateMapByFile("./configs/tokens.cnf");
@@ -40,13 +42,18 @@ async function populateMapByFile(filename: string) {
 function stringToTokenArray(input: string) {
     const chars: string[] = input.split("");
     const token_array: Token[] = [];
+    let escaped : boolean = false;
     let temp_number: Token | undefined = undefined;
 
     for (const char of chars) {
         let token: Token;
-        if (token_map.has(char)) {
+        if(char === escaped_char) {
+            escaped = true;
+            continue;
+        } else if (!escaped && token_map.has(char)) {
             token = structuredClone(token_map.get(char));
         } else {
+            escaped = false;
             token = { char, precedence: 0, type: TokenType.OPERAND, argc: 0 };
         }
         if (token.type === TokenType.OPERATOR ||
@@ -74,22 +81,22 @@ function stringToTokenArray(input: string) {
     return token_array;
 }
 
-function infixNotationToPosfix(infix: string): string {
+function infixNotationToPosfix(infix: string): Token[] {
     const tokens: Token[] = stringToTokenArray(infix);
-    console.log(tokens);
-    const out_queue: string[] = [];
+    // console.log(tokens);
+    const out_queue: Token[] = [];
     const op_stack: Token[] = [];
 
     for (const token of tokens) {
         if (token.type === TokenType.OPERAND) {
-            out_queue.push(token.char);
+            out_queue.push(token);
         }
         if (token.type === TokenType.OPERATOR) {
             while (op_stack.length !== 0 && op_stack[op_stack.length - 1].precedence > token.precedence) {
                 if (op_stack[op_stack.length - 1].char === "(") {
                     throw new Error(`ERROR :: Molformed formula: ${infix}`);
                 }
-                out_queue.push(op_stack.pop().char);
+                out_queue.push(op_stack.pop());
             }
             op_stack.push(token);
         }
@@ -101,7 +108,7 @@ function infixNotationToPosfix(infix: string): string {
                 if (op_stack[op_stack.length - 1].char === "(") {
                     throw new Error(`ERROR :: Molformed formula: ${infix}`);
                 }
-                out_queue.push(op_stack.pop().char);
+                out_queue.push(op_stack.pop());
             }
             if (op_stack.length !== 0) {
                 op_stack.pop();
@@ -115,10 +122,11 @@ function infixNotationToPosfix(infix: string): string {
         if (op_stack[op_stack.length - 1].char === "(") {
             throw new Error(`ERROR :: Molformed formula: ${infix}`);
         }
-        out_queue.push(op_stack.pop().char);
+        out_queue.push(op_stack.pop());
     }
 
-    return out_queue.join(" ");
+    return out_queue;
 }
 
 export default infixNotationToPosfix;
+export {TokenType};
