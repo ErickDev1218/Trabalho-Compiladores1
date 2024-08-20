@@ -1,15 +1,29 @@
 import Automata, { charToAutomata, epsilonChar, mergeAutomatas } from "./Automata.js";
 import infixNotationToPosfix, { Token, TokenType } from "./infixToPosfix.js";
 
+function getOutStates(A1 : Automata) : string {
+    let A1out : string = "";
+    for(const out of A1.finalStates) {
+        if(A1out !== "") {
+            A1out += "|";
+        }
+        A1out  += A1.outState[out];
+    }
+    return A1out;
+}
+
 function automataSum(A1 : Automata, A2 : Automata) {
     const res : Automata = {
         size: A1.size + A2.size + 2,
         initState: 0,
         finalStates: [A1.size + A2.size + 1],
+        outState: [ epsilonChar ],
         transitions: new Map<[number, string], number[]>()
     };
+    (getOutStates(A2));
     mergeAutomatas(res, A1, 1);
     mergeAutomatas(res, A2, 1 + A1.size);
+    res.outState[A1.size + A2.size + 1] = "(" + getOutStates(A1) + "|" + getOutStates(A2) + ")";
     res.transitions.set([0, epsilonChar], [A1.initState+1]);
     res.transitions.set([0, epsilonChar], [A2.initState + A1.size + 1]);
     for(let i = 0; i < A1.finalStates.length; i++) {
@@ -21,27 +35,32 @@ function automataSum(A1 : Automata, A2 : Automata) {
     return res;
 }
 
-function automataConcat(A1 : Automata, A2 : Automata) :Automata {
+function automataConcat(A1 : Automata, A2 : Automata) : Automata {
     const res : Automata = {
         size: A1.size + A2.size - 1,
         initState: 0,
         finalStates: [A1.size + A2.size - 2],
+        outState: [ epsilonChar ],
         transitions: new Map<[number, string], number[]>()
     };
     mergeAutomatas(res, A1, 0);
     mergeAutomatas(res, A2, A1.size - 1);
+    res.outState[A1.size + A2.size - 2] = "(" + getOutStates(A1) + "." + getOutStates(A2) + ")";
     return res;
 }
+
 function automataKleene(A1 : Automata) : Automata {
     const res : Automata = {
         //Adiciona mais dois estados
         size: A1.size + 2,
         initState: 0,
         finalStates: [A1.size + 1],
+        outState: [epsilonChar],
         transitions: new Map<[number, string], number[]>()
     };
     //Move cada estado para o estado + 1, para liberar o novo estado inicial 
     mergeAutomatas(res,A1,1);
+    res.outState[A1.size+ 1] = "(" + getOutStates(A1) + ")*";
     //Transicao estado inicial para o primeiro estado com epsilon
     res.transitions.set([0,epsilonChar],[res.initState +1]);
     //Transicao estado inicial para o final com epsilon
@@ -51,7 +70,6 @@ function automataKleene(A1 : Automata) : Automata {
     return res;
 }
 function automataRange (s1 : string, s2 : string) : Automata {
-    console.log(s1, s2);
     const startCharCode = s2.charCodeAt(0);
     const endCharCode = s1.charCodeAt(0);
 
@@ -64,10 +82,12 @@ function automataRange (s1 : string, s2 : string) : Automata {
         result.push(String.fromCharCode(i));
     }
 
-    return thompsonConstruction(result.join("|"));
+    const ret = thompsonConstruction(result.join("|"));
+    ret.outState[ret.size-1] = `(${s2}-${s1})`;
+    return ret;
 }
 
-function thompsonConstruction (regex : string) : Automata {
+function thompsonConstruction (regex : string, outString : string | undefined = undefined) : Automata {
     //Operador range -> a-z
 
     if(regex !== ''){
@@ -80,22 +100,26 @@ function thompsonConstruction (regex : string) : Automata {
                 if(token.char === '|'){
                     const A1 : [Automata, string] = stack.pop();
                     const A2 : [Automata, string] = stack.pop();
-                    stack.push([automataSum(A1[0],A2[0]), A1[1] + "|" + A2[1]]);
+                    stack.push([automataSum(A2[0],A1[0]), A1[1] + "|" + A2[1]]);
                 } else if( token.char === "-") {
                     const A1 : [Automata, string] = stack.pop();
                     const A2 : [Automata, string] = stack.pop();
-                    stack.push([automataRange(A1[1], A2[1]), A1[0] + "-" + A2[1]]);
-                } else if(token.char === '.'){
+                    stack.push([automataRange(A1[1], A2[1]), A1[1] + "-" + A2[1]]);
+                } 
+                else if(token.char === '.'){
                     const A1 : [Automata, string] = stack.pop();
                     const A2 : [Automata, string] = stack.pop();
-                    stack.push([automataConcat(A1[0],A2[0]), A1[1] + "." + A2[1]]);
-                }else if(token.char === '*'){
+                    stack.push([automataConcat(A2[0],A1[0]), A1[1] + "." + A2[1]]);
+                }
+                else if(token.char === '*'){
                     const A1 : [Automata, string] = stack.pop();
                     stack.push([automataKleene(A1[0]), A1[1] + "*"]);
                 }
             }
         }
-        return stack.pop()[0];
+        const ret : Automata = stack.pop()[0];
+        ret.outState[ret.size-1] = outString === undefined ? regex : outString ;
+        return ret;
     }else{
         throw Error('INVALID NULL REGEX!');
     }

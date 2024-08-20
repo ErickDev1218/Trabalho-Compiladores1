@@ -1,6 +1,7 @@
 // import Automata, { charToAutomata, parseToGraphviz } from "./Automata.js";
 
-import { parseToGraphviz } from "./Automata.js";
+import Automata, { epsilonChar, parseToGraphviz } from "./Automata.js";
+import { closure } from "./nfaTdfa.js";
 import thompsonConstruction from "./thompsonConstruction.js";
 
 
@@ -21,5 +22,17 @@ import thompsonConstruction from "./thompsonConstruction.js";
 
 // console.log(parseToGraphviz(automataSum(final,final1)));
 
-const regex = '(0-9)*';
-console.log(parseToGraphviz(thompsonConstruction(regex)));
+// const A1 = thompsonConstruction('(0-9).(0-9)*', "NUMBER");
+// const regex = 'i.n.t';
+// const A2 = thompsonConstruction(regex, "INT");
+
+const regex = '((A-Z)|(a-z)|(0-9))*';
+const A1 = thompsonConstruction(regex);
+const closureA2Init : number[] = closure(A1, 0);
+console.log(closureA2Init);
+console.log(parseToGraphviz(A1));
+
+// console.log(regex);
+// console.log(parseToGraphviz(A2));
+// console.log(A1);
+// console.log(closureA2Init);

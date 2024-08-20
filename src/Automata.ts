@@ -4,6 +4,7 @@ type Automata = {
     size: number, /*size = 2 -> state0, state1*/
     initState: number,
     finalStates: number[],
+    outState: string[],
     transitions: Map<[number, string], number[]>
 }
 
@@ -15,6 +16,7 @@ function charToAutomata(char : string) : Automata {
         size: 2,
         initState: 0,
         finalStates: [1],
+        outState: [ epsilonChar, char ],
         transitions 
     };
 }
@@ -23,6 +25,11 @@ function charToAutomata(char : string) : Automata {
 function mergeAutomatas(A1: Automata, A2: Automata, offset : number){
     for(const [key, value] of A2.transitions) {
         A1.transitions.set([key[0]+offset, key[1]], value.map(value => value+offset));
+    }
+    for(let i = offset; i < A1.size; i++) {
+        if (!A1.outState[i]) {
+            A1.outState[i] = A2.outState[i-offset];
+        }
     }
 }
 
@@ -33,16 +40,16 @@ node [ shape = "circle" ]
 A [style=invis]
 `;
 
-function parseToGraphviz(a : Automata) : void {
+function parseToGraphviz(a : Automata, showNums : boolean = true) : string {
     let out = graphVizTemplate;
     for(let i = 0; i < a.size; i++) {
         if(i === a.initState) {
-            out += `${i}\n`;
+            out += `${i}[label="${showNums ? i : a.outState[i]}"]\n`;
             out += `A -> ${i}\n`;
         } else if (a.finalStates.includes(i)) {
-            out += `${i}[shape="doublecircle"]\n`;
+            out += `${i}[shape="doublecircle", label="${showNums ? i : a.outState[i]}"]\n`;
         } else {
-            out += `${i}\n`;
+            out += `${i}[label="${showNums ? i : a.outState[i]}"]\n`;
         }
     }
     for (const [key, value] of a.transitions) {
@@ -51,7 +58,7 @@ function parseToGraphviz(a : Automata) : void {
         }
     }
     out += "}\n";
-    console.log(out);
+    return out;
 }
 
 export default Automata;
