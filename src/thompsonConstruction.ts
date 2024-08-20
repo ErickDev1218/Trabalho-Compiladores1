@@ -20,12 +20,20 @@ function automataSum(A1 : Automata, A2 : Automata) {
     return res;
 }
 
-// function automataCancat(A1 : Automata, A2 : Automata) :Automata {
-
-// }
+function automataConcat(A1 : Automata, A2 : Automata) :Automata {
+    const res : Automata = {
+        size: A1.size + A2.size - 1,
+        initState: 0,
+        finalStates: [A1.size + A2.size - 2],
+        transitions: new Map<[number, string], number[]>()
+    };
+    mergeAutomatas(res, A1, 0);
+    mergeAutomatas(res, A2, A1.size - 1);
+    return res;
+}
 
 // function automataKleene(A1 : Automata) : Automata {
 
 // }
 
-export { automataSum };
+export { automataSum, automataConcat };
