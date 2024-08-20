@@ -1,4 +1,5 @@
-import Automata, { epsilonChar, mergeAutomatas } from "./Automata.js";
+import Automata, { charToAutomata, epsilonChar, mergeAutomatas } from "./Automata.js";
+import infixNotationToPosfix, { Token, TokenType } from "./infixToPosfix.js";
 
 function automataSum(A1 : Automata, A2 : Automata) {
     const res : Automata = {
@@ -31,7 +32,6 @@ function automataConcat(A1 : Automata, A2 : Automata) :Automata {
     mergeAutomatas(res, A2, A1.size - 1);
     return res;
 }
-
 function automataKleene(A1 : Automata) : Automata {
     const res : Automata = {
         //Adiciona mais dois estados
@@ -50,5 +50,56 @@ function automataKleene(A1 : Automata) : Automata {
     res.transitions.set([0 + A1.size ,epsilonChar],res.finalStates);
     return res;
 }
+function automataRange (s1 : string, s2 : string) : Automata {
+    console.log(s1, s2);
+    const startCharCode = s2.charCodeAt(0);
+    const endCharCode = s1.charCodeAt(0);
 
-export { automataSum, automataConcat , automataKleene };
+    if (startCharCode > endCharCode) {
+        throw new Error("s1 deve ser menor ou igual a s2");
+    }
+
+    const result: string[] = [];
+    for (let i = startCharCode; i <= endCharCode; i++) {
+        result.push(String.fromCharCode(i));
+    }
+
+    return thompsonConstruction(result.join("|"));
+}
+
+function thompsonConstruction (regex : string) : Automata {
+    //Operador range -> a-z
+
+    if(regex !== ''){
+        const tokens : Token[] = infixNotationToPosfix(regex); 
+        const stack : [Automata, string][] = [];
+        for(const token of tokens){
+            if(token.type === TokenType.OPERAND){
+                stack.push([charToAutomata(token.char), token.char]);
+            }else if(token.type === TokenType.OPERATOR){
+                if(token.char === '|'){
+                    const A1 : [Automata, string] = stack.pop();
+                    const A2 : [Automata, string] = stack.pop();
+                    stack.push([automataSum(A1[0],A2[0]), A1[1] + "|" + A2[1]]);
+                } else if( token.char === "-") {
+                    const A1 : [Automata, string] = stack.pop();
+                    const A2 : [Automata, string] = stack.pop();
+                    stack.push([automataRange(A1[1], A2[1]), A1[0] + "-" + A2[1]]);
+                } else if(token.char === '.'){
+                    const A1 : [Automata, string] = stack.pop();
+                    const A2 : [Automata, string] = stack.pop();
+                    stack.push([automataConcat(A1[0],A2[0]), A1[1] + "." + A2[1]]);
+                }else if(token.char === '*'){
+                    const A1 : [Automata, string] = stack.pop();
+                    stack.push([automataKleene(A1[0]), A1[1] + "*"]);
+                }
+            }
+        }
+        return stack.pop()[0];
+    }else{
+        throw Error('INVALID NULL REGEX!');
+    }
+}
+
+export default thompsonConstruction;
+// export { automataSum, automataConcat , automataKleene };

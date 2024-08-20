@@ -83,7 +83,6 @@ function stringToTokenArray(input: string) {
 
 function infixNotationToPosfix(infix: string): Token[] {
     const tokens: Token[] = stringToTokenArray(infix);
-    // console.log(tokens);
     const out_queue: Token[] = [];
     const op_stack: Token[] = [];
 
@@ -129,4 +128,4 @@ function infixNotationToPosfix(infix: string): Token[] {
 }
 
 export default infixNotationToPosfix;
-export {TokenType};
+export {TokenType, Token};
