@@ -1,4 +1,4 @@
-const epsilonChar : string = '@';
+const epsilonChar : string = 'ε';
 
 type Automata = {
     size: number, /*size = 2 -> state0, state1*/
@@ -17,6 +17,13 @@ function charToAutomata(char : string) : Automata {
         finalStates: [1],
         transitions 
     };
+}
+
+// * Copy transitions A1 <- A2 with offset = x on states
+function mergeAutomatas(A1: Automata, A2: Automata, offset : number){
+    for(const [key, value] of A2.transitions) {
+        A1.transitions.set([key[0]+offset, key[1]], value.map(value => value+offset));
+    }
 }
 
 const graphVizTemplate = `
@@ -48,4 +55,4 @@ function parseToGraphviz(a : Automata) : void {
 }
 
 export default Automata;
-export { charToAutomata, parseToGraphviz, epsilonChar };
+export { charToAutomata, parseToGraphviz, mergeAutomatas, epsilonChar };
