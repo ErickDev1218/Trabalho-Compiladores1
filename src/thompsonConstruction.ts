@@ -32,8 +32,23 @@ function automataConcat(A1 : Automata, A2 : Automata) :Automata {
     return res;
 }
 
-// function automataKleene(A1 : Automata) : Automata {
+function automataKleene(A1 : Automata) : Automata {
+    const res : Automata = {
+        //Adiciona mais dois estados
+        size: A1.size + 2,
+        initState: 0,
+        finalStates: [A1.size + 1],
+        transitions: new Map<[number, string], number[]>()
+    };
+    //Move cada estado para o estado + 1, para liberar o novo estado inicial 
+    mergeAutomatas(res,A1,1);
+    //Transicao estado inicial para o primeiro estado com epsilon
+    res.transitions.set([0,epsilonChar],[res.initState +1]);
+    //Transicao estado inicial para o final com epsilon
+    res.transitions.set([0,epsilonChar],res.finalStates);
+    res.transitions.set([0 + A1.size ,epsilonChar],[res.initState + 1]);
+    res.transitions.set([0 + A1.size ,epsilonChar],res.finalStates);
+    return res;
+}
 
-// }
-
-export { automataSum, automataConcat };
+export { automataSum, automataConcat , automataKleene };
