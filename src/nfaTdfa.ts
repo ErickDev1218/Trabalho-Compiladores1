@@ -1,20 +1,128 @@
-import Automata, { epsilonChar } from "./Automata.js";
+import AutomataNFA, { _addTransition, addTransition, AutomataDFA, epsilonChar, stringToTrasition, Transition, transitionToString } from "./Automata.js";
 
-function closure(A1 : Automata, state : number) : number[] {
-    const ret : number[] = [];
-    const stack = [state];
-
-    while(stack.length > 0) {
-        const curr = stack.pop();
-        for(const [key, value] of A1.transitions){
-            if(key[0] === curr && key[1] === epsilonChar) {
-                stack.push(...value);
-            }
-        }
-        ret.push(curr);
-    }
-
-    return ret;
+function arrayContido<T>(array1: T[], array2: T[][]): boolean {
+  return array2.some(elemento => {
+    return Array.isArray(elemento) && 
+           elemento.length === array1.length &&
+           elemento.every((valor, indice) => valor === array1[indice]);
+  });
 }
 
-export { closure };
+function _getClosure(A1: AutomataNFA, state: number): number[] {
+    const stack: number[] = [];
+    const closure: number[] = [];
+    stack.push(state);
+
+    while (stack.length !== 0) {
+        const curr = stack.pop();
+        let trans = A1.transitions.get(transitionToString({ state: curr, char: epsilonChar }));
+        trans = trans === undefined ? [] : trans;
+        for (const state of trans) {
+            if (!closure.includes(curr)) {
+                stack.push(state);
+            }
+        }
+        if (!closure.includes(curr)) {
+            closure.push(curr);
+        }
+    }
+
+    return closure;
+}
+
+function getClosure(A1: AutomataNFA, states: number[]): number[] {
+    const closure: number[] = [...states];
+
+    for (const state of states) {
+        const currClosure: number[] = (_getClosure(A1, state)).filter(value => !closure.includes(value));
+        closure.push(...currClosure);
+    }
+
+    return closure;
+}
+
+function getAlphabet(A1: AutomataNFA) {
+    const alpha: string[] = [];
+    for (const [key] of A1.transitions) {
+        const trans: Transition = stringToTrasition(key);
+        if (trans.char != epsilonChar && !alpha.includes(trans.char)) {
+            alpha.push(trans.char);
+        }
+    }
+    return alpha;
+}
+
+function dfaEdge(A1: AutomataNFA, states: number[], char: string): number[] {
+    const ret: number[] = [];
+    for (const state of states) {
+        let to_push = A1.transitions.get(
+            transitionToString({ state, char }),
+        );
+        to_push = to_push === undefined ? [] : to_push;
+        to_push = to_push.filter(value => !ret.includes(value));
+        ret.push(...to_push);
+    }
+    return getClosure(A1, ret).sort();
+}
+
+function nfaTodfa(A1: AutomataNFA): AutomataDFA {
+    const res: AutomataDFA = {
+        size: 0,
+        finalStates: [],
+        initState: 0,
+        outState: [],
+        transitions: new Map<string, number>()
+    };
+    const bigToSmall = new Map<string, number>();
+    const alpha: string[] = getAlphabet(A1);
+    const stack: number[][] = [];
+    const firstClosure = getClosure(A1, [A1.initState]).sort();
+    stack.push(firstClosure);
+    if (!bigToSmall.has(firstClosure.join(","))) {
+        bigToSmall.set(firstClosure.join(","), bigToSmall.size);
+    }
+    for (const st of firstClosure) {
+        if (A1.finalStates.includes(st)) {
+            const realState = bigToSmall.get(firstClosure.join(","));
+            if (!res.finalStates.includes(realState)) {
+                res.finalStates.push(realState);
+            }
+        }
+    }
+    const isResolve : Map<number, boolean> = new Map<number, boolean>();
+    while (stack.length != 0) {
+        const curr: number[] = stack.pop();
+        for (const char of alpha) {
+            const bigState: number[] = dfaEdge(A1, curr, char);
+            if (bigState.length !== 0) {
+                if (!bigToSmall.has(curr.join(","))) {
+                    bigToSmall.set(curr.join(","), bigToSmall.size);
+                }
+                if (!bigToSmall.has(bigState.join(","))) {
+                    bigToSmall.set(bigState.join(","), bigToSmall.size);
+                }
+                _addTransition(
+                    res.transitions,
+                    { state: bigToSmall.get(curr.join(",")), char },
+                    bigToSmall.get(bigState.join(","))
+                );
+                if(!isResolve.has(bigToSmall.get(curr.join(",")))) {
+                    stack.push(bigState);
+                }
+                for (const st of bigState) {
+                    if (A1.finalStates.includes(st)) {
+                        const realState = bigToSmall.get(bigState.join(","));
+                        if (!res.finalStates.includes(realState)) {
+                            res.finalStates.push(realState);
+                        }
+                    }
+                }
+            }
+        }
+        isResolve.set(bigToSmall.get(curr.join(",")), true);
+    }
+    res.size = bigToSmall.size;
+    return res;
+}
+
+export { getClosure, getAlphabet, dfaEdge, nfaTodfa };
