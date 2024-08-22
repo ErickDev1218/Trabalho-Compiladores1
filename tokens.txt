@@ -1,0 +1,12 @@
+INT Inteiro
+STR String
+NUM Numeral
+VAR Variavel
+CST Literal String
+ADD Adição
+SUB Subtração
+MUL Multiplicação
+EQU Igualdade
+LTH Menor que
+GTH Maior que
+SCN Ponto e vírgula
