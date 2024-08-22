@@ -7,7 +7,7 @@ type AutomataNFA = {
     size: number, /*size = 2 -> state0, state1*/
     initState: number,
     finalStates: number[],
-    outState: string[],
+    outState: Map<number,string[]>,
     transitions: Map<string, number[]>
 }
 
@@ -15,7 +15,7 @@ type AutomataDFA = {
     size: number, /*size = 2 -> state0, state1*/
     initState: number,
     finalStates: number[],
-    outState: string[],
+    outState: Map<number,string[]>
     transitions: Map<string, number>
 }
 
@@ -57,12 +57,13 @@ function _addTransition(map: Map<string, number>, trans: Transition, go: number)
 function charToAutomata(char: string): AutomataNFA {
     const transitions = new Map<string, number[]>;
     addTransition(transitions, {state: 0, char }, 1);
-
+    const out = new Map<number,string[]>;
+    out.set(1,[char]);
     return {
         size: 2,
         initState: 0,
         finalStates: [1],
-        outState: [epsilonChar, char],
+        outState: out,
         transitions
     };
 }
@@ -97,12 +98,12 @@ function parseToGraphviz(a: AutomataNFA, showNums: boolean = true): string {
     let out = graphVizTemplate;
     for (let i = 0; i < a.size; i++) {
         if (i === a.initState) {
-            out += `${i}[label="${showNums ? i : a.outState[i]}"]\n`;
+            out += `${i}[label="${i}"]\n`;
             out += `A -> ${i}\n`;
         } else if (a.finalStates.includes(i)) {
-            out += `${i}[shape="doublecircle", label="${showNums ? i : a.outState[i]}"]\n`;
+            out += `${i}[shape="doublecircle", label="${showNums ? i : a.outState.get(i).join(",")}"]\n`;
         } else {
-            out += `${i}[label="${showNums ? i : a.outState[i]}"]\n`;
+            out += `${i}[label="${i}"]\n`;
         }
     }
     for (const [key, value] of a.transitions) {
@@ -119,15 +120,15 @@ function _parseToGraphviz(a: AutomataDFA, showNums: boolean = true): string {
     let out = graphVizTemplate;
     for (let i = 0; i < a.size; i++) {
         if (i === a.initState && a.finalStates.includes(i)) {
-            out += `${i}[shape="doublecircle", label="${showNums ? i : a.outState[i]}"]\n`;
+            out += `${i}[shape="doublecircle", label="${showNums ? i : a.outState.get(i)}"]\n`;
             out += `A -> ${i}\n`;
         } else if (i === a.initState) {
-            out += `${i}[label="${showNums ? i : a.outState[i]}"]\n`;
+            out += `${i}[label="${i}"]\n`;
             out += `A -> ${i}\n`;
         } else if (a.finalStates.includes(i)) {
-            out += `${i}[shape="doublecircle", label="${showNums ? i : a.outState[i]}"]\n`;
+            out += `${i}[shape="doublecircle", label="${showNums ? i : a.outState.get(i)}"]\n`;
         } else {
-            out += `${i}[label="${showNums ? i : a.outState[i]}"]\n`;
+            out += `${i}[label="${i}"]\n`;
         }
     }
     for (const [key, value] of a.transitions) {

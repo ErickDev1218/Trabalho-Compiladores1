@@ -1,15 +1,39 @@
 import AutomataNFA, { addTransition, charToAutomata, epsilonChar, mergeAutomatas } from "./Automata.js";
 import infixNotationToPosfix, { Token, TokenType } from "./infixToPosfix.js";
 
-function getOutStates(A1: AutomataNFA): string {
-    let A1out: string = "";
-    for (const out of A1.finalStates) {
-        if (A1out !== "") {
-            A1out += "|";
-        }
-        A1out += A1.outState[out];
+function automataJoin(allAutomatas : AutomataNFA[]){
+    let res : AutomataNFA = {} as AutomataNFA;
+    if(allAutomatas.length > 0){
+        res = allAutomatas[0];
     }
-    return A1out;
+    for(let i = 1; i < allAutomatas.length; i++){
+        res = _automataJoin(res,allAutomatas[i]);
+    }
+    return res;
+}
+function _automataJoin(A1: AutomataNFA, A2: AutomataNFA) {
+    const res: AutomataNFA = {
+        size: A1.size + A2.size + 1,
+        initState: 0,
+        finalStates: [...A1.finalStates.map(value => value+1), ...A2.finalStates.map(value => value + 1 + A1.size)],
+        outState: new Map<number,string[]>,
+        transitions: new Map<string, number[]>()
+    };
+    mergeAutomatas(res, A1, 1);
+    mergeAutomatas(res, A2, 1 + A1.size);
+    // res.outState[A1.size + A2.size + 1] = "(" + getOutStates(A1) + "|" + getOutStates(A2) + ")";
+    // res.outState.set(A1.size + A2.size + 1,[`${A1.outState}|${A2.outState}`]);
+    // res.transitions.set([0, epsilonChar], [A1.initState+1]);
+    // res.transitions.set([0, epsilonChar], [A2.initState + A1.size + 1]);
+    for(const [key, value] of A1.outState) {
+        res.outState.set(key+1, value);
+    }
+    for(const [key, value] of A2.outState) {
+        res.outState.set(key+1+A1.size, value);
+    }
+    addTransition(res.transitions, { state: 0, char: epsilonChar }, A1.initState + 1);
+    addTransition(res.transitions, { state: 0, char: epsilonChar }, A2.initState + A1.size + 1);
+    return res;
 }
 
 function automataSum(A1: AutomataNFA, A2: AutomataNFA) {
@@ -17,13 +41,13 @@ function automataSum(A1: AutomataNFA, A2: AutomataNFA) {
         size: A1.size + A2.size + 2,
         initState: 0,
         finalStates: [A1.size + A2.size + 1],
-        outState: [epsilonChar],
+        outState: new Map<number,string[]>,
         transitions: new Map<string, number[]>()
     };
-    (getOutStates(A2));
     mergeAutomatas(res, A1, 1);
     mergeAutomatas(res, A2, 1 + A1.size);
-    res.outState[A1.size + A2.size + 1] = "(" + getOutStates(A1) + "|" + getOutStates(A2) + ")";
+    // res.outState[A1.size + A2.size + 1] = "(" + getOutStates(A1) + "|" + getOutStates(A2) + ")";
+    // res.outState.set(A1.size + A2.size + 1,[`${A1.outState}|${A2.outState}`]);
     // res.transitions.set([0, epsilonChar], [A1.initState+1]);
     addTransition(res.transitions, { state: 0, char: epsilonChar }, A1.initState + 1);
     // res.transitions.set([0, epsilonChar], [A2.initState + A1.size + 1]);
@@ -44,12 +68,12 @@ function automataConcat(A1 : AutomataNFA, A2 : AutomataNFA) : AutomataNFA {
         size: A1.size + A2.size - 1,
         initState: 0,
         finalStates: [A1.size + A2.size - 2],
-        outState: [ epsilonChar ],
+        outState: new Map <number,string[]>,
         transitions: new Map<string, number[]>()
     };
     mergeAutomatas(res, A1, 0);
     mergeAutomatas(res, A2, A1.size - 1);
-    res.outState[A1.size + A2.size - 2] = "(" + getOutStates(A1) + "." + getOutStates(A2) + ")";
+    // res.outState[A1.size + A2.size - 2] = "(" + getOutStates(A1) + "." + getOutStates(A2) + ")";
     return res;
 }
 
@@ -59,12 +83,11 @@ function automataKleene(A1 : AutomataNFA) : AutomataNFA {
         size: A1.size + 2,
         initState: 0,
         finalStates: [A1.size + 1],
-        outState: [epsilonChar],
+        outState: new Map<number,string[]>,
         transitions: new Map<string, number[]>()
     };
     //Move cada estado para o estado + 1, para liberar o novo estado inicial 
     mergeAutomatas(res,A1,1);
-    res.outState[A1.size+ 1] = "(" + getOutStates(A1) + ")*";
     //Transicao estado inicial para o primeiro estado com epsilon
     // res.transitions.set([0,epsilonChar],[res.initState +1]);
     addTransition(res.transitions,{state: 0, char: epsilonChar},res.initState+1);
@@ -92,7 +115,6 @@ function automataRange (s1 : string, s2 : string) : AutomataNFA {
     }
 
     const ret = thompsonConstruction(result.join("|"));
-    ret.outState[ret.size-1] = `(${s2}-${s1})`;
     return ret;
 }
 
@@ -125,7 +147,9 @@ function thompsonConstruction (regex : string, outString : string | undefined = 
             }
         }
         const ret : AutomataNFA = stack.pop()[0];
-        ret.outState[ret.size-1] = outString === undefined ? regex : outString ;
+        ret.outState = new Map<number,string[]>;
+        ret.outState.set(ret.size-1,[outString]);
+        // ret.outState[ret.size-1] = outString === undefined ? regex : outString ;
         return ret;
     }else{
         throw Error('INVALID NULL REGEX!');
@@ -133,5 +157,5 @@ function thompsonConstruction (regex : string, outString : string | undefined = 
 }
 
 export default thompsonConstruction;
-// export { automataSum, automataConcat , automataKleene };
+export { _automataJoin,automataJoin };
 // export { automataSum, automataConcat,automataKleene };

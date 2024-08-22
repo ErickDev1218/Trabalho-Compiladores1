@@ -1,12 +1,4 @@
-import AutomataNFA, { _addTransition, addTransition, AutomataDFA, epsilonChar, stringToTrasition, Transition, transitionToString } from "./Automata.js";
-
-function arrayContido<T>(array1: T[], array2: T[][]): boolean {
-  return array2.some(elemento => {
-    return Array.isArray(elemento) && 
-           elemento.length === array1.length &&
-           elemento.every((valor, indice) => valor === array1[indice]);
-  });
-}
+import AutomataNFA, { _addTransition, AutomataDFA, epsilonChar, stringToTrasition, Transition, transitionToString } from "./Automata.js";
 
 function _getClosure(A1: AutomataNFA, state: number): number[] {
     const stack: number[] = [];
@@ -70,7 +62,7 @@ function nfaTodfa(A1: AutomataNFA): AutomataDFA {
         size: 0,
         finalStates: [],
         initState: 0,
-        outState: [],
+        outState: new Map<number, string[]>,
         transitions: new Map<string, number>()
     };
     const bigToSmall = new Map<string, number>();
@@ -92,11 +84,14 @@ function nfaTodfa(A1: AutomataNFA): AutomataDFA {
     const isResolve : Map<number, boolean> = new Map<number, boolean>();
     while (stack.length != 0) {
         const curr: number[] = stack.pop();
+        if (!bigToSmall.has(curr.join(","))) {
+            bigToSmall.set(curr.join(","), bigToSmall.size);
+        }
         for (const char of alpha) {
             const bigState: number[] = dfaEdge(A1, curr, char);
             if (bigState.length !== 0) {
-                if (!bigToSmall.has(curr.join(","))) {
-                    bigToSmall.set(curr.join(","), bigToSmall.size);
+                if(!isResolve.has(bigToSmall.get(bigState.join(",")))) {
+                    stack.push(bigState);
                 }
                 if (!bigToSmall.has(bigState.join(","))) {
                     bigToSmall.set(bigState.join(","), bigToSmall.size);
@@ -106,21 +101,35 @@ function nfaTodfa(A1: AutomataNFA): AutomataDFA {
                     { state: bigToSmall.get(curr.join(",")), char },
                     bigToSmall.get(bigState.join(","))
                 );
-                if(!isResolve.has(bigToSmall.get(curr.join(",")))) {
-                    stack.push(bigState);
-                }
-                for (const st of bigState) {
-                    if (A1.finalStates.includes(st)) {
-                        const realState = bigToSmall.get(bigState.join(","));
-                        if (!res.finalStates.includes(realState)) {
-                            res.finalStates.push(realState);
-                        }
-                    }
-                }
+                // for (const st of bigState) {
+                //     if (A1.finalStates.includes(st)) {
+                //         const realState = bigToSmall.get(bigState.join(","));
+                //         if (!res.finalStates.includes(realState)) {
+                //             res.finalStates.push(realState);
+                //         }
+                //     }
+                // }
             }
         }
         isResolve.set(bigToSmall.get(curr.join(",")), true);
+        const newFinal : string[] = [];
+        for(const state of curr) {
+            for(const [key, value] of A1.outState) {
+                if(state === key) {
+                    const _value = value.filter(val => !newFinal.includes(val));
+                    newFinal.push(..._value);
+                }
+            }
+        }
+        if(newFinal.length > 0) {
+            const small = bigToSmall.get(curr.join(','));
+            res.outState.set(small, newFinal);
+            if(!res.finalStates.includes(small)) {
+                res.finalStates.push(small);
+            }
+        }
     }
+    res.finalStates.sort();
     res.size = bigToSmall.size;
     return res;
 }
