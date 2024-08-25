@@ -47,10 +47,3 @@ rl.on('line', (line) => {
         console.log("WARNNING :: NULL LINE");
     }
 });
-
-// while(true) {
-// }
-
-// for(const word of words.split(' ')){
-//     console.log(useDFA(automataDFA,word));
-// }
